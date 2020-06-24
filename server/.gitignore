@@ -1,0 +1,4 @@
+*.py[doc]
+*$py.class
+
+/db.sqlite

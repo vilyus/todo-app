@@ -1,5 +1,11 @@
 # todo-app
 
+## Run
+```
+docker-compose up
+```
+
+
 ## Project setup
 ```
 yarn install
