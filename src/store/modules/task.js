@@ -104,8 +104,10 @@ export default {
     // create a `Task`
     create: ({ commit, state, getters }, { task }) =>
       axios.post('/task/', task)
-        .then(({ data: task }) =>
-          setOne({ commit, state, getters }, { task })),
+        .then(({ data: task }) => {
+          setOne({ commit, state, getters }, { task })
+          return task
+        }),
 
     // update a `Task`
     update: ({ commit, state, getters }, { task }) =>

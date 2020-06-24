@@ -5,7 +5,7 @@
         v-model="model.newTaskTitle"
         class="add-task-field"
         label="New task"
-        @enter="submit()"
+        @enter="disable ? null : submit()"
       >
         <template v-if="model.newTaskTitle" #append>
           <BaseButton
@@ -14,11 +14,12 @@
             :color="$colors.success"
             icon="note_add"
             title="Add new task"
-            @click="submit()"
+            @click="disable ? null : submit()"
           />
         </template>
       </BaseInput>
     </section>
+
     <section>
       <div v-if="!lists"><br />Loading...</div>
       <template v-else>
@@ -27,20 +28,30 @@
             v-for="list in lists"
             :key="list.id"
             :task-id="list.id"
+            @delete="deleteTaskId = $event"
           />
         </section>
       </template>
     </section>
+
+    <DeleteModal
+      :value="deleteTaskId !== null"
+      :task-id="deleteTaskId"
+      @input="deleteTaskId = $event ? deleteTaskId : null"
+    />
+
   </div>
 </template>
 
 <script>
 import TasksTask from './TasksTask'
+import DeleteModal from './DeleteModal'
 
 export default {
   name: 'Tasks',
 
   components: {
+    DeleteModal,
     TasksTask,
   },
 
@@ -48,6 +59,8 @@ export default {
     model: {
       newTaskTitle: '',
     },
+    disable: false,
+    deleteTaskId: null,
   }),
 
   computed: {
@@ -64,8 +77,12 @@ export default {
     submit() {
       const { $store, model: { newTaskTitle: title } } = this
 
+      if (!title) return
+
+      this.disable = true
       return $store.dispatch('task/create', { task: { title } })
         .then(() => { this.model.newTaskTitle = '' })
+        .finally(() => { this.disable = false })
     },
   },
 }

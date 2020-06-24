@@ -2,6 +2,7 @@
   <button
     :class="{ round, flat, active }"
     :style="{ color, borderColor: flat ? null : color }"
+    :tabindex="tabindex"
     type="button"
     class="BaseButton"
     @keydown.enter.prevent="active = true"
@@ -32,6 +33,7 @@ export default {
     round: { type: Boolean, default: false },
     flat: { type: Boolean, default: false },
     color: { type: String, default: null },
+    tabindex: { type: [String, Number], default: null },
   },
 
   data: () => ({

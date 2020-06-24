@@ -2,6 +2,7 @@
   <article
     class="BaseCard"
     :class="{ clickable, active }"
+    @focus="this.active = true"
     @blur="this.active = false"
     @click="onCardClick()"
   >
@@ -11,6 +12,8 @@
       :to="to || '#'"
       :replace="replace"
       class="router-link"
+      @focus.native="active = true"
+      @blur.native="active = false"
     >
       <slot />
     </router-link>
@@ -135,4 +138,5 @@ export default {
     color inherit
     text-decoration inherit
     height 100%
+    outline none
 </style>

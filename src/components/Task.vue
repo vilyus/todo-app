@@ -24,17 +24,28 @@
               title="Drag ToDo's to change their order, click to toggle"
             >
               <template v-if="item">
+                <BaseInput
+                  v-if="item.edit"
+                  v-model="item.title"
+                  label="Edit ToDo"
+                  @enter="item.edit = false"
+                />
                 <BaseCheckbox
+                  v-else
                   v-model="item.checked"
-                  :label="item.title"
+                  :label="item.title || '<empty>'"
                 />
                 <BaseButton
-                  flat round class="delete-icon"
+                  flat round class="edit-icon"
+                  :icon="item.edit ? 'check' : 'edit'"
+                  title="Edit ToDo"
+                  @click="item.edit = !item.edit"
+                />
+                <BaseButton
+                  flat round icon="delete" class="delete-icon"
                   title="Delete ToDo"
                   @click="deleteItem(item)"
-                >
-                  <span class="material-icons">delete</span>
-                </BaseButton>
+                />
               </template>
             </li>
           </transition-group>
@@ -64,7 +75,7 @@
       </BaseInput>
 
       <section class="actions-section">
-        <BaseButton @click="save()">
+        <BaseButton v-show="hasChanges" @click="save()">
           <span class="material-icons">save</span>
           <span>Apply changes</span>
         </BaseButton>
@@ -96,21 +107,12 @@
         </section>
       </ModalDialog>
 
-      <ModalDialog
+      <DeleteModal
         v-model="deleteModal"
-      >
-        <h1>Are you sure that you want to delete this task?</h1>
-        <section class="modal-actions">
-          <BaseButton flat @click="deleteModal = false">
-            <span class="material-icons">cancel</span>
-            <span>No, keep the task</span>
-          </BaseButton>
-          <BaseButton class="autofocus" :color="$colors.danger" @click="deleteTask()">
-            <span class="material-icons">delete</span>
-            <span>Yes, delete it</span>
-          </BaseButton>
-        </section>
-      </ModalDialog>
+        :task-id="taskId"
+        @delete="$router.replace({ name: 'Tasks' })"
+      />
+
     </template>
   </div>
 </template>
@@ -120,11 +122,13 @@ import * as R from 'ramda'
 import Draggable from 'vuedraggable'
 
 import ModalDialog from './ModalDialog'
+import DeleteModal from './DeleteModal'
 
 export default {
   name: 'Task',
 
   components: {
+    DeleteModal,
     Draggable,
     ModalDialog,
   },
@@ -138,7 +142,6 @@ export default {
       title: null,
       items: null,
       newItemTitle: '',
-      removeItemIds: [],
     },
     revertModal: false,
     deleteModal: false,
@@ -150,8 +153,10 @@ export default {
     hasChanges() {
       const { task, model } = this
 
-      return task.title !== model.title ||
-        !R.equals(task.items, model.items)
+      // `id` and `edit` flag do not show changes
+      const clearItems = R.map(R.omit(['id', 'edit']))
+      return !!model.newItemTitle || task.title !== model.title ||
+        !R.equals(clearItems(task.items), clearItems(model.items))
     },
   },
 
@@ -163,9 +168,18 @@ export default {
       },
       immediate: true,
     },
+
     task: {
       handler: 'initModel',
       immediate: true,
+    },
+
+    model: {
+      handler() {
+        // hide rollback snackbar on model changes
+        this.$store.dispatch('rollback/register', { fn: null })
+      },
+      deep: true,
     },
   },
 
@@ -184,6 +198,7 @@ export default {
         order: model.items.length
           ? R.last(model.items).order + 10
           : 10,
+        edit: false,
       })
       model.newItemTitle = ''
     },
@@ -192,23 +207,23 @@ export default {
       const { model } = this
 
       model.items = model.items.filter(listItem => listItem !== item)
-      if (item.id) {
-        model.removeItemIds.push(item.id)
-      }
     },
 
     initModel() {
+      // init model on value change or when revert was requested
       const { task } = this
 
       if (task) {
         this.model.title = task.title
         this.model.items = R.clone(task.items)
-        this.model.removeItemIds = []
+          // add edit flag for per-item editing
+          .map(item => ({ ...item, edit: false }))
+        this.model.newItemTitle = ''
       }
     },
 
-    // Confirm revert changes from the modal dialog
     revert() {
+      // Confirm revert changes from the modal dialog
       this.initModel()
       this.revertModal = false
     },
@@ -221,28 +236,64 @@ export default {
       })
     },
 
+    registerUndoRedo(undoState, redoState) {
+      // undo/redo functionality
+      const { $store } = this
+
+      // undo function updates task to its previous value
+      const undoFn = () => {
+        $store.dispatch('task/update', { task: undoState })
+          .then(() => {
+            // on success it swap undoState and redoState
+            const oldUndoState = undoState
+            undoState = redoState
+            redoState = oldUndoState
+
+            // now, when states are swapped this same function
+            // can provide redo functionality
+            return $store.dispatch('rollback/register', {
+              fn: undoFn,
+              description: 'Changes reverted. Want to redo them?',
+            })
+          })
+      }
+
+      $store.dispatch('rollback/register', {
+        fn: undoFn,
+        description: 'Changes saved. Want to undo them?',
+      })
+    },
+
     save() {
       // update the task
       const {
         $store,
         taskId,
+        task,
         model: { title, items },
       } = this
 
-      // remove id's of new items
+      // if user typed something to add a new `Todo` - apply it first
+      this.addNewItem()
+
+      // remove `id`'s of new items and client-only `edit` prop
       const apiItems = items
-        .map(item => ({ ...item, id: item.id || undefined }))
+        .map(item => ({ ...item, id: item.id || undefined, edit: undefined }))
+
+      // build the updated task
+      const updatedTask = { id: taskId, title, items: apiItems }
+      // remember the task current state for undo
+      const undoState = {
+        id: taskId,
+        title: task.title,
+        items: R.clone(task.items)
+          .map(item => ({ ...item, id: item.id || undefined, edit: undefined })),
+      }
 
       // update task
-      const task = { id: taskId, title, items: apiItems }
-      return $store.dispatch('task/update', { task })
-    },
-
-    deleteTask() {
-      const { $store, $router, taskId } = this
-
-      return $store.dispatch('task/delete', { taskId })
-        .then(() => $router.replace({ name: 'Tasks' }))
+      return $store.dispatch('task/update', { task: updatedTask })
+        // show the undo snackbar
+        .then(() => { this.registerUndoRedo(undoState, updatedTask) })
     },
   },
 }
@@ -288,6 +339,7 @@ export default {
 
         .delete-icon
           color $danger
+        .delete-icon, .edit-icon
           background-color transparent
           margin-left 7px
 
@@ -297,7 +349,7 @@ export default {
           & >>> label
             text-decoration line-through
 
-          .delete-icon
+          .delete-icon, .edit-icon
             color $grey3
 
   .empty

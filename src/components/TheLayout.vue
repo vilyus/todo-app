@@ -1,20 +1,26 @@
 <template>
   <div class="TheLayout">
     <TheXhrProgress />
+
     <router-view name="title">
       <h1>Todo App</h1>
     </router-view>
+
     <router-view/>
+
+    <TheRollbackSnackbar />
   </div>
 </template>
 
 <script>
+import TheRollbackSnackbar from './TheRollbackSnackbar'
 import TheXhrProgress from './TheXhrProgress'
 
 export default {
   name: 'TheLayout',
 
   components: {
+    TheRollbackSnackbar,
     TheXhrProgress,
   },
 }
