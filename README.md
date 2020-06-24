@@ -4,6 +4,9 @@
 ```
 docker-compose up
 ```
+then go to http://localhost:8080/
+
+Requires available open ports: 5000 and 8080
 
 
 ## Project setup
