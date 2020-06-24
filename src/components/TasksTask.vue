@@ -1,11 +1,11 @@
 <template>
   <BaseCard
-    class="TodoListsTodoList"
+    class="TasksTask"
     clickable
-    :to="{ name: 'TodoList', params: { id: todoListId } }"
-   :title="`Click to edit &quot;${todoList.title}&quot;`"
+    :to="{ name: 'Task', params: { id: taskId } }"
+   :title="`Click to edit &quot;${task.title}&quot;`"
   >
-    <h2>{{ todoList.title }}</h2>
+    <h2>{{ task.title }}</h2>
     <ul class="unstyled-list">
       <li
         v-for="item in topItems"
@@ -27,15 +27,15 @@
 
 <script>
 export default {
-  name: 'TodoListsTodoList',
+  name: 'TasksTask',
 
   props: {
-    todoListId: { type: Number, required: true },
+    taskId: { type: Number, required: true },
   },
 
   computed: {
-    todoList() { return this.$store.getters['todoList/get'](this.todoListId) },
-    topItems() { return this.todoList && this.todoList.items.slice(0, 3) },
+    task() { return this.$store.getters['task/get'](this.taskId) },
+    topItems() { return this.task && this.task.items.slice(0, 3) },
   },
 }
 </script>
@@ -43,7 +43,7 @@ export default {
 <style lang="stylus" scoped>
   @import '../stylus/variables'
 
-  .TodoListsTodoList
+  .TasksTask
     text-align left
     display flex
     flex-direction column

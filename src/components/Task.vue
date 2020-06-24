@@ -1,6 +1,6 @@
 <template>
-  <div class="TodoList">
-    <template v-if="todoList">
+  <div class="Task">
+    <template v-if="task">
       <BaseInput
         v-model="model.title"
         label="Task title"
@@ -122,7 +122,7 @@ import Draggable from 'vuedraggable'
 import ModalDialog from './ModalDialog'
 
 export default {
-  name: 'TodoList',
+  name: 'Task',
 
   components: {
     Draggable,
@@ -130,7 +130,7 @@ export default {
   },
 
   props: {
-    todoListId: { type: Number, required: true },
+    taskId: { type: Number, required: true },
   },
 
   data: () => ({
@@ -145,25 +145,25 @@ export default {
   }),
 
   computed: {
-    todoList() { return this.$store.getters['todoList/get'](this.todoListId) },
+    task() { return this.$store.getters['task/get'](this.taskId) },
 
     hasChanges() {
-      const { todoList, model } = this
+      const { task, model } = this
 
-      return todoList.title !== model.title ||
-        !R.equals(todoList.items, model.items)
+      return task.title !== model.title ||
+        !R.equals(task.items, model.items)
     },
   },
 
   watch: {
-    todoListId: {
-      handler(todoListId) {
-        const { $store, todoList } = this
-        if (todoList === null) $store.dispatch('todoList/get', { todoListId })
+    taskId: {
+      handler(taskId) {
+        const { $store, task } = this
+        if (task === null) $store.dispatch('task/get', { taskId })
       },
       immediate: true,
     },
-    todoList: {
+    task: {
       handler: 'initModel',
       immediate: true,
     },
@@ -171,14 +171,14 @@ export default {
 
   methods: {
     addNewItem() {
-      const { model, todoListId: listId } = this
+      const { model, taskId } = this
 
       const title = model.newItemTitle.trim()
       if (!title) return
 
       model.items.push({
         id: null,
-        listId,
+        taskId,
         checked: false,
         title,
         order: model.items.length
@@ -198,11 +198,11 @@ export default {
     },
 
     initModel() {
-      const { todoList } = this
+      const { task } = this
 
-      if (todoList) {
-        this.model.title = todoList.title
-        this.model.items = R.clone(todoList.items)
+      if (task) {
+        this.model.title = task.title
+        this.model.items = R.clone(task.items)
         this.model.removeItemIds = []
       }
     },
@@ -222,37 +222,27 @@ export default {
     },
 
     save() {
+      // update the task
       const {
         $store,
-        todoListId,
-        model: { title, items, removeItemIds },
+        taskId,
+        model: { title, items },
       } = this
 
-      const todoList = { id: todoListId, title }
+      // remove id's of new items
+      const apiItems = items
+        .map(item => ({ ...item, id: item.id || undefined }))
 
-      // 1. update title
-      return $store.dispatch('todoList/update', { todoList })
-        // 2. delete removed items
-        .then(() =>
-          Promise.all(removeItemIds.map(todoItemId =>
-            $store.dispatch('todoItem/delete', { todoItemId }))))
-        // 3. create/update rest of the items
-        .then(() =>
-          Promise.all(items.map(todoItem =>
-            todoItem.id
-              ? $store.dispatch('todoItem/update', { todoItem })
-              : $store.dispatch('todoItem/create', {
-                todoItem: R.omit(['id'], todoItem),
-              }))))
-        // 4. reload `TodoList` with new items
-        .then(() => $store.dispatch('todoList/get', { todoListId }))
+      // update task
+      const task = { id: taskId, title, items: apiItems }
+      return $store.dispatch('task/update', { task })
     },
 
     deleteTask() {
-      const { $store, $router, todoListId } = this
+      const { $store, $router, taskId } = this
 
-      return $store.dispatch('todoList/delete', { todoListId })
-        .then(() => $router.replace({ name: 'TodoLists' }))
+      return $store.dispatch('task/delete', { taskId })
+        .then(() => $router.replace({ name: 'Tasks' }))
     },
   },
 }

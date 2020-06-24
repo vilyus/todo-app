@@ -1,34 +1,34 @@
 <template>
-  <h1 class="PageTodoListTitle">
+  <h1 class="PageTaskTitle">
     <BaseButton
       flat round
       class="back-button"
-      @click="$router.replace({ name: 'TodoLists' })"
+      @click="$router.replace({ name: 'Tasks' })"
     >
       <span class="material-icons">arrow_back</span>
     </BaseButton>
     <span class="title-text">
-      {{ todoList ? todoList.title : 'Loading...' }}
+      {{ task ? task.title : 'Loading...' }}
     </span>
   </h1>
 </template>
 
 <script>
 export default {
-  name: 'PageTodoListTitle',
+  name: 'PageTaskTitle',
 
   props: {
-    todoListId: { type: Number, required: true },
+    taskId: { type: Number, required: true },
   },
 
   computed: {
-    todoList() { return this.$store.getters['todoList/get'](this.todoListId) },
+    task() { return this.$store.getters['task/get'](this.taskId) },
   },
 }
 </script>
 
 <style lang="stylus" scoped>
-  .PageTodoListTitle
+  .PageTaskTitle
     max-width 100%
     display inline-flex
     align-items center

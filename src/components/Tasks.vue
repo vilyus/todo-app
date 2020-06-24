@@ -1,13 +1,13 @@
 <template>
-  <div class="TodoLists">
+  <div class="Tasks">
     <section>
       <BaseInput
-        v-model="model.newTodoListTitle"
-        class="add-todo-list-field"
+        v-model="model.newTaskTitle"
+        class="add-task-field"
         label="New task"
         @enter="submit()"
       >
-        <template v-if="model.newTodoListTitle" #append>
+        <template v-if="model.newTaskTitle" #append>
           <BaseButton
             round
             flat
@@ -23,10 +23,10 @@
       <div v-if="!lists"><br />Loading...</div>
       <template v-else>
         <section class="lists-flex">
-          <TodoListsTodoList
+          <TasksTask
             v-for="list in lists"
             :key="list.id"
-            :todo-list-id="list.id"
+            :task-id="list.id"
           />
         </section>
       </template>
@@ -35,37 +35,37 @@
 </template>
 
 <script>
-import TodoListsTodoList from './TodoListsTodoList'
+import TasksTask from './TasksTask'
 
 export default {
-  name: 'TodoLists',
+  name: 'Tasks',
 
   components: {
-    TodoListsTodoList,
+    TasksTask,
   },
 
   data: () => ({
     model: {
-      newTodoListTitle: '',
+      newTaskTitle: '',
     },
   }),
 
   computed: {
-    // all `TodoItem`s are grouped in such `TodoList`s
-    lists() { return this.$store.getters['todoList/list'] },
+    // all `TodoItem`s are grouped in such `Task`s
+    lists() { return this.$store.getters['task/list'] },
   },
 
   created() {
     // get lists form DB
-    this.$store.dispatch('todoList/getList')
+    this.$store.dispatch('task/getList')
   },
 
   methods: {
     submit() {
-      const { $store, model: { newTodoListTitle: title } } = this
+      const { $store, model: { newTaskTitle: title } } = this
 
-      return $store.dispatch('todoList/create', { todoList: { title } })
-        .then(() => { this.model.newTodoListTitle = '' })
+      return $store.dispatch('task/create', { task: { title } })
+        .then(() => { this.model.newTaskTitle = '' })
     },
   },
 }
@@ -74,7 +74,7 @@ export default {
 <style scoped lang="stylus">
   @import "../stylus/variables"
 
-  .add-todo-list-field
+  .add-task-field
     width 100%
     max-width 100%
 
@@ -89,7 +89,7 @@ export default {
 
     padding-top 32px
 
-  .TodoListsTodoList
+  .TasksTask
     margin 20px 0
     width 100%
 

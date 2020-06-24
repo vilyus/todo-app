@@ -2,13 +2,13 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 
 import todoItem from './modules/todoItem'
-import todoList from './modules/todoList'
+import task from './modules/task'
 
 Vue.use(Vuex)
 
 export default new Vuex.Store({
   modules: {
     todoItem,
-    todoList,
+    task,
   },
 })
