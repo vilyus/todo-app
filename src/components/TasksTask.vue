@@ -23,13 +23,14 @@
         v-for="item in topItems"
         :key="item.id"
         :class="{ muted: item.checked }"
-        class="flex-center"
+        class="todo-item"
       >
         <span
           class="material-icons list-checkbox"
           v-text="item.checked ? 'check_box' : 'check_box_outline_blank'"
         />
         <span
+          class="item-title"
           :class="{ 'line-through': item.checked }"
           v-text="item.title || '<empty>'"
         />
@@ -90,9 +91,14 @@ export default {
     list-style none
     padding-left 0
 
-  .flex-center
+  .todo-item
     display flex
     align-items center
+
+    & .item-title
+      overflow hidden
+      text-overflow ellipsis
+      white-space nowrap
 
   .list-checkbox
     margin-right 7px
